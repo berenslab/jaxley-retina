@@ -1,9 +1,0 @@
-jax==0.6.2
-jaxlib==0.6.2
-jaxley==0.11.3
-jaxley-mech==0.3.1
-ml-dtypes==0.5.1
-numpy==1.26.4
-tensorflow==2.19.0
-tensorflow-datasets==4.9.2
-

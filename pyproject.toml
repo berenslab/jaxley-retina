@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jaxley-retina"
+version = "0.1.0"
+authors = [
+    { name="Kyra Kadhim", email="kyra.kadhim@uni-tuebingen.de" },
+]
+description = "Model of the mouse outer retina in Jaxley"
+requires-python = ">=3.10"
+readme = "README.md"
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+license = "MIT"
+dependencies = [
+    "jax==0.6.2",
+    "jaxlib==0.6.2",
+    "jaxley==0.11.3",
+    "jaxley-mech==0.3.1",
+    "ml-dtypes==0.5.1",
+    "numpy==1.26.4",
+    "tensorflow==2.19.0",
+    "tensorflow-datasets==4.9.2"
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.setuptools.packages.find]
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["*"]  # package names should match these glob patterns (["*"] by default)
+exclude = []  # exclude packages matching these glob patterns (empty by default)
