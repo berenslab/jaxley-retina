@@ -7,6 +7,11 @@ After cloning the repository, it can be installed via
 pip install jaxley-retina
 ```
 
+## Data
+Phototransduction cascade stimuli and recordings can be downloaded [here](https://datadryad.org/dataset/doi:10.5061/dryad.q2bvq83vg). For further information see the related paper [Chen et al. 2024](https://elifesciences.org/articles/93795).
+
+Original glutamate release data can be downloaded [here](https://zenodo.org/records/3760607). This data was further processed and traces were selected for training the ribbon synapse model in the code in this repository.
+
 ## License
 [MIT License](https://github.com/berenslab/jaxley-retina/blob/main/LICENSE)
 

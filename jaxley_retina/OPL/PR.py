@@ -1,7 +1,15 @@
 import jaxley as jx
 from jaxley_mech.channels.chen24 import Phototransduction
-from jaxley_mech.channels.kamiyama09 import (Ca, CaNernstReversal, CaPump,
-                                             ClCa, Hyper, KCa, Kv, Leak)
+from jaxley_mech.channels.kamiyama09 import (
+    Ca,
+    CaNernstReversal,
+    CaPump,
+    ClCa,
+    Hyper,
+    KCa,
+    Kv,
+    Leak,
+)
 
 
 def build_PR(ptc_params: dict = None):
