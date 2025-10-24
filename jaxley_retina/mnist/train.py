@@ -30,9 +30,9 @@ warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 import yaml
 
 import jaxley as jx
-from jaxley_retina.tasks.mnist.image_to_stim import stimulus_from_image
-from jaxley_retina.tasks.mnist.simple_data_prep import build_train_loader
-from jaxley_retina.tasks.mnist.train_io import log_dictionary
+from jaxley_retina.mnist.image_to_stim import stimulus_from_image
+from jaxley_retina.mnist.simple_data_prep import build_train_loader
+from jaxley_retina.mnist.train_io import log_dictionary
 
 
 def parse_args():

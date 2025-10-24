@@ -22,14 +22,14 @@ dependencies = [
     "jaxley==0.11.3",
     "jaxley-mech==0.3.1",
     "equinox==0.13.0",
-    "optax",
+    "optax==0.2.2",
     "optimistix==0.10.0",
     "ml-dtypes==0.5.1",
     "numpy==1.26.4",
     "seaborn",
     "tensorflow==2.19.0",
     "tensorflow-datasets==4.9.2",
-    "yaml"
+    "PyYAML==6.0.1"
 ]
 
 [tool.isort]
