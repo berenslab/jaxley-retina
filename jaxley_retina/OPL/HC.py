@@ -18,8 +18,6 @@ def build_HC():
     HC.insert(Leak(name="HC_Leak"))
     HC.insert(Na(name="HC_Na"))
 
-    HC.set("HC_Ca_gCa", 3.3e-3)  # nS (replicates Aoyama plots)
-
     HC.init_states()
 
     return HC

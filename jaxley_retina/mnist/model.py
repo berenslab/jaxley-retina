@@ -19,7 +19,7 @@ def build_mnist_model(model_config: dict) -> jx.Network:
 
     PR, _ = build_PR(ptc_params) # trained PTC params
     HC = build_HC() 
-    readout = build_readout(BC_readouts=model_config['BC_readouts'], use_benison=model_config['use_benison'])
+    readout = build_readout(BC_readouts=model_config['BC_readouts'])
 
     n_readouts = model_config["n_readouts"]
     nHCs = model_config["nHCs"]
@@ -137,17 +137,12 @@ def setup_param_training(network: jx.Network, train_config: dict) -> tuple:
     ribbon_to_readout = df.query("pre_cell_type == 'PR' & post_cell_type == 'readout'")
     ribbon2readout_subnetwork = network.select(edges=ribbon_to_readout.index)
     ribbon2readout_subnetwork.edges["controlled_by_param"] = ribbon_to_readout.index
-
-    # Scale RibbonReadout_gS_init_mean by the number of synapses per cell
-    M = ribbon2readout_subnetwork.edges.groupby("post_index").apply(len).mean()
-    gS_init_mean = train_config["RibbonReadout_gS_init_mean"] * 1/M
-    gS_init_std = gS_init_mean / 10.0 # to sweep over the means
+    _ = np.random.seed(train_config["seed"]) # legacy, for reproducability
     gS_init = np.random.normal(
-        gS_init_mean, 
-        gS_init_std, 
+        train_config["RibbonReadout_gS_init_mean"], 
+        train_config["RibbonReadout_gS_init_std"], 
         size=ribbon2readout_subnetwork.edges["controlled_by_param"].unique().shape[0]
         ).tolist()
-
     ribbon2readout_subnetwork.make_trainable("RibbonReadout_gS", gS_init)
 
     # If RibbonHC is in the model, the HC->PR ionotropic synapse also has to be currently
@@ -155,39 +150,24 @@ def setup_param_training(network: jx.Network, train_config: dict) -> tuple:
         ribbon_to_HC = df.query("pre_cell_type == 'PR' & post_cell_type == 'HC'")
         ribbon2HC_subnetwork = network.select(edges=ribbon_to_HC.index)
         ribbon2HC_subnetwork.edges["controlled_by_param"] = ribbon_to_HC.index
-
-        # Scale RibbonHC_gS_init_mean by the number of synapses per cell
-        M = ribbon2HC_subnetwork.edges.groupby("post_index").apply(len).mean()
-        gS_init_mean = train_config["RibbonHC_gS_init_mean"] * 1/M
-        gS_init_std = gS_init_mean / 10.0 # to sweep over the means
+        _ = np.random.seed(train_config["seed"])
         gS_init = np.random.normal(
-            gS_init_mean, 
-            gS_init_std, 
+            train_config["RibbonHC_gS_init_mean"], 
+            train_config["RibbonHC_gS_init_std"], 
             size=ribbon2HC_subnetwork.edges["controlled_by_param"].unique().shape[0]
             ).tolist()
-
         ribbon2HC_subnetwork.make_trainable("RibbonHC_gS", gS_init)
 
         ionotropic_df = df.query("pre_cell_type == 'HC'")
         subnetwork = network.select(edges=ionotropic_df.index)
         subnetwork.edges["controlled_by_param"] = ionotropic_df.index
-
-        # Scale by number of synapses for each cell
-        M = subnetwork.edges.groupby("post_index").apply(len).mean()
-        gS_init_mean = train_config["IonotropicSynapse_gS_init_mean"] * 1/M
-        gS_init_std = gS_init_mean / 10.0 # to sweep over the means
+        _ = np.random.seed(train_config["seed"]) # for reproducability
         gS_init = np.random.normal(
-            gS_init_mean, 
-            gS_init_std, 
+            train_config["IonotropicSynapse_gS_init_mean"], 
+            train_config["IonotropicSynapse_gS_init_std"], 
             size=subnetwork.edges["controlled_by_param"].unique().shape[0]
         ).tolist()
-
         subnetwork.make_trainable("IonotropicSynapse_gS", gS_init)
-        # Can make the other synapse parameters trainable but shared
-        for x in ["e_syn", "k_minus"]:
-            if f"IonotropicSynapse_{x}_init" in train_config:
-                subnetwork.edges["controlled_by_param"] = 0
-                subnetwork.make_trainable(f"IonotropicSynapse_{x}", train_config[f"IonotropicSynapse_{x}_init"])
 
     network.nodes.drop(columns=["cell_type"], inplace=True)
 
@@ -198,15 +178,6 @@ def setup_param_training(network: jx.Network, train_config: dict) -> tuple:
             "RibbonHC_gS": (train_config["RibbonHC_gS_lower"], train_config["RibbonHC_gS_upper"]),
             "IonotropicSynapse_gS": (train_config["IonotropicSynapse_gS_lower"], train_config["IonotropicSynapse_gS_upper"])
         })
-        
-    # Can add the other synaptic parameters if they were made trainable (not sharing here but could)
-    for x in ["e_syn", "k_minus"]:
-        if f"IonotropicSynapse_{x}_init" in train_config:
-            bounds[f"IonotropicSynapse_{x}"] = (
-                train_config[f"IonotropicSynapse_{x}_lower"], 
-                train_config[f"IonotropicSynapse_{x}_upper"]
-                )
-    
     transform = mnist_transform(bounds)
 
     return network, transform
