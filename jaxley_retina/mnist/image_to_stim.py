@@ -37,7 +37,7 @@ def stimulus_from_image(
         ) -> jnp.ndarray:
     """Turn the images into arrays for data_clamp() in simulate().
     
-    NOTE: vmap over this function to create a batch of image stimuli. Not jittable!
+    NOTE: vmap over this function to create a batch of image stimuli. Not jittable though!
     """
     grid_x, grid_y = coords_to_gridcoords(coords, im)
     

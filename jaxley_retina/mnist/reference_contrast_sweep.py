@@ -38,10 +38,10 @@ def contrast_sweep(contrast_config):
     model_config, stim_config, train_config = (configs["Model config"], configs["Stim config"], configs["Train config"])
     print(stim_config)
 
-    # older configs use phi_max instead of stim_max
+    # Older configs use phi_max instead of stim_max
     stim_config["stim_max"] = stim_config["phi_max"]
     
-    # Have to build the network to get the coords, or be smarter about it, but only have to do once
+    # Get the PR coords
     coords = get_coords(model_config["nPRs"])[:2, :]  # Only need x and y
 
     # Build the model

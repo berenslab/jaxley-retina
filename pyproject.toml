@@ -28,9 +28,10 @@ dependencies = [
     "numpy==1.26.4",
     "seaborn",
     "tensorflow==2.19.0",
-    "tensorflow-datasets==4.9.2",
+    "tensorflow-datasets==4.9.4",
     "protobuf==3.20.3",
-    "PyYAML==6.0.1"
+    "PyYAML==6.0.1",
+    "ipywidgets"
 ]
 
 [tool.isort]
