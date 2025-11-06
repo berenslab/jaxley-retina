@@ -7,6 +7,9 @@ After cloning the repository, it can be installed via
 pip install jaxley-retina
 ```
 
+## Usage
+Figure data that isn't included in the paper folder can be recreated by running the notebooks. Notebooks should bridge the gap between the scripts in the source code used to train the model and the code used to generate the final paper figures. Feel free to open Git issues or write me at kyra.kadhim@uni-tuebingen.de if you have any questions. 
+
 ## Data
 Phototransduction cascade stimuli and recordings can be downloaded [here](https://datadryad.org/dataset/doi:10.5061/dryad.q2bvq83vg). For further information see the related paper [Chen et al. 2024](https://elifesciences.org/articles/93795).
 
