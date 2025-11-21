@@ -4,7 +4,6 @@ from jaxley_retina.cell_embedding import circular_square_lattice
 import numpy as np
 import pandas as pd
 import pathlib
-import pickle
 from scipy.integrate import trapezoid
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
@@ -136,11 +135,12 @@ def sort_rois(roi_df):
     idx_sets = list(idx_sets.values())
     return idx_sets
 
+# Global I/O path for the following functions
+p = pathlib.Path(__file__).parent.resolve().parents[1] / "data"
 
 def get_opsin_densities():
     # Load the experimental data about selectivites
-    path = pathlib.Path(jaxley_retina.__file__)
-    nadal_data_path = path.parent.parent / "data" / "Nadal2020_Fig3c_PigGrads.csv"
+    nadal_data_path = p / "Nadal2020_Fig3c_PigGrads.csv"
     opsin_data = pd.read_csv(nadal_data_path)
 
     # Build a large grid over which to interpolate opsin selectivities
@@ -215,17 +215,16 @@ def organize_data():
     Organize the Zenodo data: filter out the nan trials and low quality trials, and
     divide traces by scan location.
     """
-    p = pathlib.Path(__file__).parent.resolve()
-    data_load_path = p.parents[1] / "data" / "Data_Cones.h5"
-    data_save_path = p.parents[1] / "data" / "cone_data_uncentered.pkl"
-    f = h5py.File(data_load_path, "r")
+    data_load_path = p / "Data_Cones.h5"
+    data_save_path = p / "cone_data_uncentered.h5"
+    f_in = h5py.File(data_load_path, "r")
     # Load glutamate traces (full-field and center-surround)
-    ff_glut = np.array(f["BGW_Traces"])
-    cs_glut = np.array(f["BG_CS_Traces"])
+    ff_glut = np.array(f_in["BGW_Traces"])
+    cs_glut = np.array(f_in["BG_CS_Traces"])
 
     # Load the trace quality indices
-    ff_qual = np.array(f["BGW_Quality"])
-    cs_qual = np.array(f["BG_CS_Quality"])
+    ff_qual = np.array(f_in["BGW_Quality"])
+    cs_qual = np.array(f_in["BG_CS_Quality"])
 
     # Load ROI information
     descripts = [
@@ -237,7 +236,7 @@ def organize_data():
         "y-coord",
         "Zoom Factor",
     ]
-    roi_df = pd.DataFrame(data=f["RoiInfo"], columns=descripts)
+    roi_df = pd.DataFrame(data=f_in["RoiInfo"], columns=descripts)
 
     # Filter out ROI indices that have problems for either stimulus
     lowq_ff = np.where(ff_qual < 0.25)[0]
@@ -266,31 +265,28 @@ def organize_data():
     roi_sets = sort_rois(roi_df)
 
     # Set up the dataset
-    data_set = dict.fromkeys(np.arange(len(roi_sets), dtype=int))
-    for i, key in enumerate(data_set.keys()):
-        data_set[key] = dict.fromkeys(
-            ["ff_glut", "cs_glut", "scan_loc", "roi_locs", "SC"]
-        )
+    f_out = h5py.File(data_save_path, "w")
+    [f_out.create_group(str(i)) for i in range(len(roi_sets))]
 
     # Get the opsin densities for estimating the scan locations later
     coords, all_densities = get_opsin_densities()
 
-    for i, s in enumerate(roi_sets):
+    for i, s in zip(np.arange(len(roi_sets), dtype=int).astype(str), roi_sets):
 
         # Only continue if there are ROIs with data
         if len(s) > 0:
 
             # Save these glutamate traces in the data set
-            data_set[i]["ff_glut"] = ff_glut[:, s]
-            data_set[i]["cs_glut"] = cs_glut[:, s]
+            f_out[i]["ff_glut"] = ff_glut[:, s]
+            f_out[i]["cs_glut"] = cs_glut[:, s]
 
             # Calculate the spectral selectivities based on the ff data
             SCs = get_selectivities(ff_glut[:, s], "ff_glut")
-            data_set[i]["SC"] = SCs
+            f_out[i]["SC"] = SCs
 
             # Only save the scan field for the ff stimulus as before
             scan_loc = estimate_scan_loc(SCs, all_densities, coords)
-            data_set[i]["scan_loc"] = scan_loc
+            f_out[i]["scan_loc"] = scan_loc
 
             # Convert the ROI locations in pixel space to um and center
             pix_coords = np.array(
@@ -298,26 +294,19 @@ def organize_data():
             ).T
             um_coords = pix_coords * (110 / 128) - (110 / 2)
             # Add scan_loc estimate to the centered coordinates
-            um_coords[:, 0] += data_set[i]["scan_loc"][0]
-            um_coords[:, 1] += data_set[i]["scan_loc"][1]
-            data_set[i]["roi_locs"] = um_coords
-
-    # Save the dataset somewhere to be accessed more quickly
-    file = open(data_save_path, "wb")
-    pickle.dump(data_set, file)
-    file.close()
+            um_coords[:, 0] += f_out[i]["scan_loc"][0]
+            um_coords[:, 1] += f_out[i]["scan_loc"][1]
+            f_out[i]["roi_locs"] = um_coords
 
 
 def choose_traces():
-    """Load cone_data_uncentered.pkl (all scan fields organized) and choose traces"""
-    path = pathlib.Path(jaxley_retina.__file__)
-    data_path = path.parent.parent / "data"
-    with open(data_path / "cone_data_uncentered.pkl", "rb") as f:
-        data = pickle.load(f)
+    """Load cone_data_uncentered.h5 (all scan fields organized) and choose traces"""
+    data_load_path = p / "cone_data_uncentered.h5"
+    data = h5py.File(data_load_path, "r")
 
     # Gather all traces and divide into ventral and dorsal traces
-    all_cs_traces = [data[i]["cs_glut"].T for i in range(len(data))]
-    sf_locs = np.array([data[i]["scan_loc"][1] for i in range(len(data))])
+    all_cs_traces = [np.array(data[str(i)]["cs_glut"]).T for i in range(len(data))]
+    sf_locs = np.array([data[str(i)]["scan_loc"][1] for i in range(len(data))])
     dorsal_traces = np.vstack([all_cs_traces[i] for i in np.where(sf_locs > 0)[0]])
     ventral_traces = np.vstack([all_cs_traces[i] for i in np.where(sf_locs < 0)[0]])
     fs = 1 / 500
@@ -341,8 +330,8 @@ def choose_traces():
     )
     # Set the beginning of the trace to zero
     trace_collection = np.subtract(trace_collection.T, trace_collection[:, 0]).T
-    with open(str(data_path / "cone_data_uncentered_120.pkl"), "wb") as f:
-        pickle.dump(trace_collection, f)
+    data_save_path = p / "120_center_responses.npy"
+    np.save(str(data_save_path), trace_collection, allow_pickle=False)
 
 
 if __name__ == "__main__":
